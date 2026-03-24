@@ -1,0 +1,67 @@
+{
+  "info": {
+    "name": "CleaNova API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"admin@cleanvoa.com\", \"password\": \"admin123\"}"
+        },
+        "url": { "raw": "http://localhost:5000/api/auth/login", "host": ["localhost"], "port": "5000", "path": ["api","auth","login"] }
+      }
+    },
+    {
+      "name": "Complaints - Get All",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:5000/api/complaints", "host": ["localhost"], "port": "5000", "path": ["api","complaints"] }
+      }
+    },
+    {
+      "name": "Complaints - Create (form-data)",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "description", "value": "Garbage pile near bus stop", "type": "text" },
+            { "key": "lat", "value": "40.7128", "type": "text" },
+            { "key": "lng", "value": "-74.0060", "type": "text" },
+            { "key": "userName", "value": "Test User", "type": "text" },
+            { "key": "isAnonymous", "value": "false", "type": "text" },
+            { "key": "image", "type": "file", "src": "" }
+          ]
+        },
+        "url": { "raw": "http://localhost:5000/api/complaints", "host": ["localhost"], "port": "5000", "path": ["api","complaints"] }
+      }
+    },
+    {
+      "name": "Complaints - Update Status (Admin)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\": \"resolved\"}"
+        },
+        "url": { "raw": "http://localhost:5000/api/complaints/:id", "host": ["localhost"], "port": "5000", "path": ["api","complaints",":id"] }
+      }
+    },
+    {
+      "name": "Stats - Get Stats",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:5000/api/stats", "host": ["localhost"], "port": "5000", "path": ["api","stats"] }
+      }
+    }
+  ]
+}
