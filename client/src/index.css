@@ -30,5 +30,16 @@
   .stat-glow-amber  { box-shadow: 0 8px 32px -4px rgba(245,158,11,0.45), 0 2px 8px rgba(0,0,0,0.12); }
   .stat-glow-blue   { box-shadow: 0 8px 32px -4px rgba(59,130,246,0.45), 0 2px 8px rgba(0,0,0,0.12); }
   .stat-glow-slate  { box-shadow: 0 8px 32px -4px rgba(71,85,105,0.45),  0 2px 8px rgba(0,0,0,0.12); }
+  .stat-glow-purple { box-shadow: 0 8px 32px -4px rgba(139,92,246,0.45), 0 2px 8px rgba(0,0,0,0.12); }
   .btn-press:active { transform: scale(0.97); }
+
+  /* Contain Leaflet's internal z-indexes inside the map wrapper */
+  .leaflet-container {
+    z-index: 0 !important;
+  }
+  /* Keep Leaflet controls (zoom, attribution) below navbar */
+  .leaflet-top,
+  .leaflet-bottom {
+    z-index: 400 !important;
+  }
 }

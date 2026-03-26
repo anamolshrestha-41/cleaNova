@@ -17,13 +17,16 @@ const NavLink = ({ to, children, active }) => (
 export default function Navbar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isAdmin = !!localStorage.getItem('adminToken');
+  const token = localStorage.getItem('adminToken');
+  const role = token ? (() => { try { return JSON.parse(atob(token.split('.')[1])).role; } catch { return null; } })() : null;
+  const isAdmin = role === 'admin';
+  const isWard = role === 'ward';
   const [menuOpen, setMenuOpen] = useState(false);
 
   const logout = () => { localStorage.removeItem('adminToken'); navigate('/'); };
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-500"
+    <nav className="sticky top-0 z-[1000] bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-500"
       style={{ boxShadow: '0 4px 24px -4px rgba(5,150,105,0.5), 0 1px 0 rgba(255,255,255,0.1)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
@@ -46,17 +49,17 @@ export default function Navbar() {
           <div className="hidden sm:flex items-center gap-1">
             <NavLink to="/" active={pathname === '/'}>Dashboard</NavLink>
             <NavLink to="/map" active={pathname === '/map'}>Map</NavLink>
-            {!isAdmin && <NavLink to="/submit" active={pathname === '/submit'}>Report Issue</NavLink>}
-            {isAdmin ? (
-              <>
-                <NavLink to="/admin" active={pathname === '/admin'}>Admin Panel</NavLink>
-                <button onClick={logout}
-                  className="ml-1 px-4 py-2 rounded-2xl text-sm font-semibold bg-white/15 text-white hover:bg-red-500 transition-all duration-200 btn-press">
-                  Logout
-                </button>
-              </>
+            <NavLink to="/transparency" active={pathname === '/transparency'}>Transparency</NavLink>
+            {!isAdmin && !isWard && <NavLink to="/submit" active={pathname === '/submit'}>Report Issue</NavLink>}
+            {isAdmin && <NavLink to="/admin" active={pathname === '/admin'}>Admin Panel</NavLink>}
+            {isWard && <NavLink to="/ward" active={pathname === '/ward'}>Ward Panel</NavLink>}
+            {(isAdmin || isWard) ? (
+              <button onClick={logout}
+                className="ml-1 px-4 py-2 rounded-2xl text-sm font-semibold bg-white/15 text-white hover:bg-red-500 transition-all duration-200 btn-press">
+                Logout
+              </button>
             ) : (
-              <NavLink to="/admin/login" active={pathname === '/admin/login'}>Admin</NavLink>
+              <NavLink to="/admin/login" active={pathname === '/admin/login'}>Login</NavLink>
             )}
           </div>
 
@@ -76,17 +79,17 @@ export default function Navbar() {
           <div className="sm:hidden pb-3 flex flex-col gap-1">
             <NavLink to="/" active={pathname === '/'}>Dashboard</NavLink>
             <NavLink to="/map" active={pathname === '/map'}>Map</NavLink>
-            {!isAdmin && <NavLink to="/submit" active={pathname === '/submit'}>Report Issue</NavLink>}
-            {isAdmin ? (
-              <>
-                <NavLink to="/admin" active={pathname === '/admin'}>Admin Panel</NavLink>
-                <button onClick={logout}
-                  className="px-4 py-2 rounded-2xl text-sm font-semibold text-white hover:bg-red-500 transition-all text-left">
-                  Logout
-                </button>
-              </>
+            <NavLink to="/transparency" active={pathname === '/transparency'}>Transparency</NavLink>
+            {!isAdmin && !isWard && <NavLink to="/submit" active={pathname === '/submit'}>Report Issue</NavLink>}
+            {isAdmin && <NavLink to="/admin" active={pathname === '/admin'}>Admin Panel</NavLink>}
+            {isWard && <NavLink to="/ward" active={pathname === '/ward'}>Ward Panel</NavLink>}
+            {(isAdmin || isWard) ? (
+              <button onClick={logout}
+                className="px-4 py-2 rounded-2xl text-sm font-semibold text-white hover:bg-red-500 transition-all text-left">
+                Logout
+              </button>
             ) : (
-              <NavLink to="/admin/login" active={pathname === '/admin/login'}>Admin</NavLink>
+              <NavLink to="/admin/login" active={pathname === '/admin/login'}>Login</NavLink>
             )}
           </div>
         )}

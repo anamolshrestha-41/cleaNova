@@ -21,6 +21,12 @@ const complaintSchema = new mongoose.Schema({
   },
   resolvedAt: { type: Date, default: null },
   upvotes: { type: Number, default: 0 },
+  count: { type: Number, default: 1 },
+  locationVerification: {
+    type: String,
+    enum: ['verified', 'unverified', 'suspicious'],
+    default: 'unverified',
+  },
   flagged: { type: Boolean, default: false },
   moderationStatus: {
     type: String,
@@ -32,10 +38,10 @@ const complaintSchema = new mongoose.Schema({
 // Geospatial index for $near duplicate detection
 complaintSchema.index({ location: '2dsphere' });
 
-// TTL index: auto-delete resolved complaints 2 days after resolvedAt
+// TTL index: auto-delete resolved complaints 10 minutes after resolvedAt
 complaintSchema.index(
   { resolvedAt: 1 },
-  { expireAfterSeconds: 172800, partialFilterExpression: { resolvedAt: { $type: 'date' } } }
+  { expireAfterSeconds: 600, partialFilterExpression: { resolvedAt: { $type: 'date' } } }
 );
 
 module.exports = mongoose.model('Complaint', complaintSchema);

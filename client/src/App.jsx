@@ -5,10 +5,21 @@ import Dashboard from './pages/Dashboard';
 import SubmitComplaint from './pages/SubmitComplaint';
 import AdminLogin from './pages/AdminLogin';
 import AdminPanel from './pages/AdminPanel';
+import WardPanel from './pages/WardPanel';
 import MapView from './pages/MapView';
+import Transparency from './pages/Transparency';
 
-const PrivateRoute = ({ children }) => {
-  return localStorage.getItem('adminToken') ? children : <Navigate to="/admin/login" />;
+const getRole = () => {
+  const token = localStorage.getItem('adminToken');
+  if (!token) return null;
+  try { return JSON.parse(atob(token.split('.')[1])).role; } catch { return null; }
+};
+
+const PrivateRoute = ({ children, role }) => {
+  const userRole = getRole();
+  if (!userRole) return <Navigate to="/admin/login" />;
+  if (role && userRole !== role) return <Navigate to="/" />;
+  return children;
 };
 
 export default function App() {
@@ -20,8 +31,10 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/submit" element={<SubmitComplaint />} />
           <Route path="/map" element={<MapView />} />
+          <Route path="/transparency" element={<Transparency />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<PrivateRoute><AdminPanel /></PrivateRoute>} />
+          <Route path="/admin" element={<PrivateRoute role="admin"><AdminPanel /></PrivateRoute>} />
+          <Route path="/ward" element={<PrivateRoute role="ward"><WardPanel /></PrivateRoute>} />
         </Routes>
       </main>
     </BrowserRouter>

@@ -38,14 +38,18 @@ const cards = (stats) => [
     ),
   },
   {
-    label: 'In Progress',
-    value: stats.inProgress,
-    sub: 'being handled',
-    bg: 'from-blue-500 to-indigo-500',
-    glow: 'stat-glow-blue',
+    label: 'Avg Response',
+    value: stats.avgResponseHours != null
+      ? stats.avgResponseHours >= 24
+        ? `${(stats.avgResponseHours / 24).toFixed(1)}d`
+        : `${stats.avgResponseHours}h`
+      : 'N/A',
+    sub: stats.avgResponseHours != null ? 'avg resolution time' : 'no resolved data',
+    bg: 'from-violet-500 to-purple-600',
+    glow: 'stat-glow-purple',
     icon: (
       <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },

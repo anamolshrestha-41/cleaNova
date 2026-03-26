@@ -79,7 +79,7 @@ export default function MapView() {
 
   const mapCenter = filtered.length > 0
     ? [filtered[0].location.lat, filtered[0].location.lng]
-    : [20.5937, 78.9629]; // India center fallback
+    : [27.7172, 85.3240]; // Kathmandu centre
 
   return (
     <div className="space-y-5">
@@ -129,7 +129,7 @@ export default function MapView() {
       <div className="flex flex-col lg:flex-row gap-4">
 
         {/* MAP */}
-        <div className="flex-1 min-h-[420px] lg:min-h-[560px] rounded-3xl overflow-hidden card-3d relative">
+        <div className="flex-1 min-h-[420px] lg:min-h-[560px] rounded-3xl overflow-hidden card-3d relative isolate" style={{ maxHeight: 'calc(100vh - 64px - 2rem)' }}>
           {loading && (
             <div className="absolute inset-0 z-[1000] bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-3xl">
               <div className="flex items-center gap-2 text-slate-500 font-semibold text-sm">

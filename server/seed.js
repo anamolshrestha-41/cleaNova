@@ -50,43 +50,73 @@ const seed = async () => {
   await connectDB();
 
   await Admin.deleteMany();
-  await Admin.create({ email: 'admin@cleanvoa.com', password: process.env.SEED_ADMIN_PASSWORD || 'ChangeMe123!' });
+  await Admin.create({ email: 'admin@cleanvoa.com', password: process.env.SEED_ADMIN_PASSWORD || 'ChangeMe123!', role: 'admin' });
   console.log('Admin created: admin@cleanvoa.com');
 
+  // Seed 32 ward officers — all share the same password for now
+  const bcrypt = require('bcryptjs');
+  const wardPassword = process.env.SEED_WARD_PASSWORD || 'ward123';
+  const hashedWardPassword = await bcrypt.hash(wardPassword, 10);
+  const wardOfficers = Array.from({ length: 32 }, (_, i) => ({
+    email: `ward${i + 1}@cleanvoa.com`,
+    password: hashedWardPassword,
+    role: 'ward',
+    wardNumber: i + 1,
+  }));
+  await Admin.insertMany(wardOfficers);
+  console.log('32 ward officers seeded (ward1@cleanvoa.com … ward32@cleanvoa.com / ward123)');
+
   await Complaint.deleteMany();
+  const now = Date.now();
   await Complaint.insertMany([
     {
-      description: 'Large pile of garbage near the main market, attracting flies and rodents.',
+      description: 'Broken drainage pipe leaking sewage onto the main road near Maharajgunj. Foul smell and slippery road surface causing accidents. Reported to ward office twice with no response.',
+      location: loc(3), city: 'Kathmandu', wardNumber: 3,
+      userName: 'Anita Gurung', isAnonymous: false,
+      status: 'pending', upvotes: 21,
+      image: '/uploads/1774496196694.png',
+      createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+      locationVerification: 'verified',
+    },
+    {
+      description: 'Overflowing garbage bin outside Ason Bazaar market. Waste spilling onto the footpath for 5 days. Flies and foul smell affecting shopkeepers and pedestrians.',
       location: loc(4), city: 'Kathmandu', wardNumber: 4,
-      userName: 'Ram Shrestha', isAnonymous: false, status: 'pending', image: '',
+      userName: 'Ram Shrestha', isAnonymous: false,
+      status: 'in-progress', upvotes: 14,
+      image: '/uploads/1774496618627.png',
+      createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000),
+      locationVerification: 'verified',
     },
     {
-      description: 'Overflowing dumpster outside Ason Chowk, waste spilling onto the footpath.',
-      location: loc(7), city: 'Kathmandu', wardNumber: 7,
-      userName: '', isAnonymous: true, status: 'in-progress', image: '',
-    },
-    {
-      description: 'Illegal dumping of construction waste near the riverbank.',
+      description: 'Illegal dumping of construction debris on Bagmati riverbank near Teku bridge. Blocking water flow and causing flooding risk. Debris includes concrete, iron rods and plastic.',
       location: loc(12), city: 'Kathmandu', wardNumber: 12,
-      userName: 'Sita Tamang', isAnonymous: false, status: 'resolved', image: '',
+      userName: '', isAnonymous: true,
+      status: 'pending', upvotes: 9,
+      image: '/uploads/1774497041985.png',
+      createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+      locationVerification: 'verified',
     },
     {
-      description: 'Broken waste bins outside the school, garbage scattered on the road.',
-      location: loc(19), city: 'Kathmandu', wardNumber: 19,
-      userName: '', isAnonymous: true, status: 'pending', image: '',
+      description: 'Plastic bags and food waste scattered near Swayambhu stupa entrance. Garbage truck has not visited in 9 days. Affecting tourists and local residents badly.',
+      location: loc(16), city: 'Kathmandu', wardNumber: 16,
+      userName: 'Bikash Maharjan', isAnonymous: false,
+      status: 'resolved', upvotes: 17,
+      image: '/uploads/1774490775231.jpg',
+      createdAt: new Date(now - 12 * 24 * 60 * 60 * 1000),
+      resolvedAt: new Date(now - 4 * 24 * 60 * 60 * 1000),
+      locationVerification: 'verified',
     },
     {
-      description: 'Stagnant water mixed with garbage near the residential colony.',
-      location: loc(25), city: 'Kathmandu', wardNumber: 25,
-      userName: 'Bikash Maharjan', isAnonymous: false, status: 'pending', image: '',
-    },
-    {
-      description: 'Garbage truck has not visited this ward in over 10 days.',
-      location: loc(31), city: 'Kathmandu', wardNumber: 31,
-      userName: '', isAnonymous: true, status: 'in-progress', image: '',
+      description: 'Large pile of household waste dumped on the roadside near Koteshwor chowk. Blocking one lane of traffic. Rodents spotted near the pile at night.',
+      location: loc(32), city: 'Kathmandu', wardNumber: 32,
+      userName: '', isAnonymous: true,
+      status: 'in-progress', upvotes: 6,
+      image: '/uploads/1774490423789.jpg',
+      createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000),
+      locationVerification: 'verified',
     },
   ]);
-  console.log('Sample Kathmandu complaints seeded.');
+  console.log('5 sample Kathmandu complaints seeded.');
   process.exit();
 };
 

@@ -31,7 +31,10 @@ const optimizeRoute = async (req, res) => {
 
     // Build coord list in the order ids were provided
     const ordered = ids.map(id => complaints.find(c => c._id.toString() === id)).filter(Boolean);
-    const coords = ordered.map(c => [c.location.lng, c.location.lat]);
+    const coords = ordered.map(c => [
+      c.location.coordinates ? c.location.coordinates[0] : c.location.lng,
+      c.location.coordinates ? c.location.coordinates[1] : c.location.lat,
+    ]);
 
     const osrmData = await osrmTrip(coords);
 

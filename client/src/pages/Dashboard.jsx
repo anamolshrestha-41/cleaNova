@@ -3,19 +3,18 @@ import { getComplaints, getStats } from '../services/complaints';
 import { usePolling } from '../hooks/usePolling';
 import ComplaintCard from '../components/ComplaintCard';
 import StatsCards from '../components/StatsCards';
+import QuotesBanner from '../components/QuotesBanner';
 import { Link } from 'react-router-dom';
 
 const STATUS_FILTERS = ['all', 'pending', 'in-progress', 'resolved'];
 
 const FilterPill = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
+  <button onClick={onClick}
     className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-all duration-200 btn-press whitespace-nowrap
       ${active
         ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
         : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
-      }`}
-  >
+      }`}>
     {children}
   </button>
 );
@@ -28,8 +27,8 @@ export default function Dashboard() {
   const fetchComplaints = useCallback(() => getComplaints(), []);
   const fetchStats = useCallback(() => getStats(), []);
 
-  const { data: complaints, loading } = usePolling(fetchComplaints, 4000);
-  const { data: stats } = usePolling(fetchStats, 4000);
+  const { data: complaints, loading } = usePolling(fetchComplaints, 8000);
+  const { data: stats } = usePolling(fetchStats, 10000);
 
   const availableWards = useMemo(() => {
     if (!complaints) return [];
@@ -54,7 +53,7 @@ export default function Dashboard() {
           <h1 className="text-[1.625rem] font-black text-slate-800 leading-tight">Complaint Dashboard</h1>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <p className="text-slate-500 text-sm">Live tracker · refreshes every 4s</p>
+            <p className="text-slate-500 text-sm">Live · Kathmandu Metropolitan City</p>
           </div>
         </div>
         {!isAdmin && (
@@ -68,10 +67,13 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Quotes banner */}
+      <QuotesBanner />
+
       {/* Stats */}
       {stats && <StatsCards stats={stats} />}
 
-      {/* Ward Stats Chips */}
+      {/* Ward chips */}
       {stats?.wardStats?.length > 0 && (
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">Complaints by Ward</p>
@@ -121,13 +123,12 @@ export default function Dashboard() {
       {/* Skeleton */}
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-3xl overflow-hidden card-3d">
-              <div className="h-28 bg-slate-100 animate-pulse" />
+              <div className="h-44 bg-slate-100 animate-pulse" />
               <div className="p-4 space-y-3">
                 <div className="h-3 bg-slate-100 rounded-full animate-pulse w-3/4" />
                 <div className="h-3 bg-slate-100 rounded-full animate-pulse w-1/2" />
-                <div className="h-3 bg-slate-100 rounded-full animate-pulse w-2/3" />
               </div>
             </div>
           ))}

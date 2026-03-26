@@ -2,6 +2,7 @@ import api from './api';
 
 export const getComplaints = (page = 1, limit = 50) =>
   api.get('/api/complaints', { params: { page, limit } }).then(r => r.data.complaints ?? r.data);
+export const getWardComplaints = () => api.get('/api/complaints/ward').then(r => r.data);
 export const createComplaint = (formData) => api.post('/api/complaints', formData).then(r => r.data);
 export const updateStatus = (id, status) => api.patch(`/api/complaints/${id}`, { status }).then(r => r.data);
 export const getStats = () => api.get('/api/stats').then(r => r.data);

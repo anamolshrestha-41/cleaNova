@@ -4,10 +4,25 @@ import { adminLogin } from '../services/complaints';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const [role, setRole] = useState('admin'); // 'admin' | 'ward'
   const [form, setForm] = useState({ email: '', password: '' });
+  const [wardNum, setWardNum] = useState('1');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+
+  // Auto-fill email when ward number changes
+  const handleWardNum = (val) => {
+    setWardNum(val);
+    setForm(p => ({ ...p, email: `ward${val}@cleanvoa.com` }));
+  };
+
+  // Reset email when switching roles
+  const switchRole = (r) => {
+    setRole(r);
+    setError('');
+    setForm({ email: r === 'admin' ? '' : `ward${wardNum}@cleanvoa.com`, password: '' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,9 +31,9 @@ export default function AdminLogin() {
     try {
       const data = await adminLogin(form.email, form.password);
       localStorage.setItem('adminToken', data.token);
-      navigate('/admin');
+      navigate(data.role === 'ward' ? '/ward' : '/admin');
     } catch {
-      setError('Invalid email or password. Please try again.');
+      setError('Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -30,24 +45,60 @@ export default function AdminLogin() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-3xl mx-auto mb-5 flex items-center justify-center shadow-xl shadow-emerald-200">
-            <svg viewBox="0 0 24 24" className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
+          <div className={`w-20 h-20 bg-gradient-to-br ${role === 'ward' ? 'from-teal-500 to-cyan-500' : 'from-emerald-500 to-teal-500'} rounded-3xl mx-auto mb-5 flex items-center justify-center shadow-xl shadow-emerald-200`}>
+            {role === 'ward' ? (
+              <svg viewBox="0 0 24 24" className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            )}
           </div>
-          <h1 className="text-[1.625rem] font-black text-slate-800">Admin Login</h1>
+          <h1 className="text-[1.625rem] font-black text-slate-800">
+            {role === 'ward' ? 'Ward Officer Login' : 'Admin Login'}
+          </h1>
           <p className="text-slate-500 text-sm mt-1">CleaNova Management Portal</p>
+
+          {/* Role toggle */}
+          <div className="flex bg-slate-100 rounded-2xl p-1 gap-1 mt-5 w-fit mx-auto">
+            <button type="button" onClick={() => switchRole('admin')}
+              className={`px-5 py-1.5 rounded-xl text-sm font-bold transition-all ${
+                role === 'admin' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}>Admin</button>
+            <button type="button" onClick={() => switchRole('ward')}
+              className={`px-5 py-1.5 rounded-xl text-sm font-bold transition-all ${
+                role === 'ward' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}>Ward Officer</button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl card-3d p-7 space-y-4">
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
-            <input type="email" value={form.email}
-              onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-              placeholder="admin@cleanvoa.com" required
-              className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all placeholder:text-slate-400" />
-          </div>
+          {/* Ward number picker — only in ward mode */}
+          {role === 'ward' && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Ward Number</label>
+              <select value={wardNum} onChange={e => handleWardNum(e.target.value)}
+                className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white">
+                {Array.from({ length: 32 }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n}>Ward {n}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Email — hidden in ward mode (auto-filled) */}
+          {role === 'admin' && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <input type="email" value={form.email}
+                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="admin@cleanvoa.com" required
+                className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all placeholder:text-slate-400" />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
@@ -97,7 +148,15 @@ export default function AdminLogin() {
             <svg viewBox="0 0 24 24" className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-xs text-slate-500">Contact your system administrator for credentials.</p>
+            {role === 'admin' ? (
+              <p className="text-xs text-slate-500">
+                Demo: <span className="font-semibold text-slate-700">admin@cleanvoa.com</span> / <span className="font-semibold text-slate-700">ChangeMe123!</span>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Select your ward and enter password: <span className="font-semibold text-slate-700">ward123</span>
+              </p>
+            )}
           </div>
         </form>
       </div>

@@ -24,58 +24,141 @@ export default function SubmitComplaint() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [duplicate, setDuplicate] = useState(null); // { _id, description, upvotes }
+  const [duplicate, setDuplicate] = useState(null);
   const [upvoted, setUpvoted] = useState(false);
+
+  // Nominatim reverse geocode — returns real ward from OSM administrative boundaries
+  const detectWard = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&format=json`,
+        { headers: { 'Accept-Language': 'en' }, signal: AbortSignal.timeout(5000) }
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+
+      // Check every address field — OSM stores ward in different fields per area
+      const candidates = [
+        addr.quarter,
+        addr.suburb,
+        addr.neighbourhood,
+        addr.city_district,
+        addr.county,
+        addr.state_district,
+        data.display_name, // last resort — ward number often appears here
+      ];
+
+      for (const c of candidates) {
+        if (!c) continue;
+        // Matches: "Ward No. 7", "Ward 7", "Ward-7", "वडा नं. ७", "वडा ७"
+        const match =
+          c.match(/ward\s*(?:no\.?\s*)?(\d+)/i) ||
+          c.match(/\bw(\d+)\b/i) ||
+          c.match(/वडा\s*(?:नं\.?\s*)?(\d+)/);
+        if (match) {
+          const n = parseInt(match[1]);
+          if (n >= 1 && n <= 32) return n;
+        }
+      }
+    } catch { /* fall through to nearest center */ }
+    return null;
+  };
+
+  // Fallback: nearest ward center (used only when Nominatim fails)
+  const nearestWard = (lat, lng) => {
+    const KTM_WARDS = [
+      { ward: 1,  lat: 27.7172, lng: 85.3240 }, { ward: 2,  lat: 27.7195, lng: 85.3175 },
+      { ward: 3,  lat: 27.7210, lng: 85.3100 }, { ward: 4,  lat: 27.7230, lng: 85.3050 },
+      { ward: 5,  lat: 27.7260, lng: 85.2990 }, { ward: 6,  lat: 27.7290, lng: 85.3060 },
+      { ward: 7,  lat: 27.7315, lng: 85.3130 }, { ward: 8,  lat: 27.7340, lng: 85.3200 },
+      { ward: 9,  lat: 27.7360, lng: 85.3270 }, { ward: 10, lat: 27.7380, lng: 85.3340 },
+      { ward: 11, lat: 27.7050, lng: 85.3150 }, { ward: 12, lat: 27.7080, lng: 85.3220 },
+      { ward: 13, lat: 27.7100, lng: 85.3290 }, { ward: 14, lat: 27.7120, lng: 85.3360 },
+      { ward: 15, lat: 27.7140, lng: 85.3430 }, { ward: 16, lat: 27.7000, lng: 85.3310 },
+      { ward: 17, lat: 27.6970, lng: 85.3380 }, { ward: 18, lat: 27.6940, lng: 85.3450 },
+      { ward: 19, lat: 27.6910, lng: 85.3520 }, { ward: 20, lat: 27.6880, lng: 85.3590 },
+      { ward: 21, lat: 27.7160, lng: 85.3500 }, { ward: 22, lat: 27.7180, lng: 85.3570 },
+      { ward: 23, lat: 27.7200, lng: 85.3640 }, { ward: 24, lat: 27.7220, lng: 85.3710 },
+      { ward: 25, lat: 27.7240, lng: 85.3780 }, { ward: 26, lat: 27.7050, lng: 85.3600 },
+      { ward: 27, lat: 27.7020, lng: 85.3670 }, { ward: 28, lat: 27.6990, lng: 85.3740 },
+      { ward: 29, lat: 27.6960, lng: 85.3810 }, { ward: 30, lat: 27.6930, lng: 85.3880 },
+      { ward: 31, lat: 27.7300, lng: 85.3400 }, { ward: 32, lat: 27.7320, lng: 85.3470 },
+    ];
+    return KTM_WARDS.reduce((best, w) => {
+      const d = Math.hypot(w.lat - lat, w.lng - lng);
+      return d < best.d ? { ward: w.ward, d } : best;
+    }, { ward: 1, d: Infinity }).ward;
+  };
 
   const getLocation = () => {
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocLoading(false); },
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setLocation({ lat, lng });
+        // Try real OSM ward detection first, fall back to nearest center
+        const ward = (await detectWard(lat, lng)) ?? nearestWard(lat, lng);
+        setForm(p => ({ ...p, wardNumber: String(ward) }));
+        setLocLoading(false);
+      },
       () => { setError('Location access denied. Please enable location.'); setLocLoading(false); }
     );
   };
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!location) return setError('Please capture your location first.');
-    if (!form.description.trim()) return setError('Description is required.');
+  const buildFormData = () => {
+    const fd = new FormData();
+    fd.append('description', form.description);
+    fd.append('lat', location.lat);
+    fd.append('lng', location.lng);
+    fd.append('city', form.city);
+    fd.append('wardNumber', form.wardNumber);
+    fd.append('userName', form.isAnonymous ? '' : form.userName);
+    fd.append('isAnonymous', form.isAnonymous);
+    if (file) fd.append('image', file);
+    return fd;
+  };
+
+  const doSubmit = async (fd) => {
     setSubmitting(true);
     setError('');
     setDuplicate(null);
     try {
-      const fd = new FormData();
-      fd.append('description', form.description);
-      fd.append('lat', location.lat);
-      fd.append('lng', location.lng);
-      fd.append('city', form.city);
-      fd.append('wardNumber', form.wardNumber);
-      fd.append('userName', form.isAnonymous ? '' : form.userName);
-      fd.append('isAnonymous', form.isAnonymous);
-      if (file) fd.append('image', file);
-      await createComplaint(fd);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 2200);
+      const result = await createComplaint(fd);
+      if (result.duplicate) {
+        setDuplicate(result.complaint);
+      } else {
+        setSuccess(true);
+        setTimeout(() => navigate('/'), 2200);
+      }
     } catch (err) {
       const data = err?.response?.data;
-      if (data?.code === 'DUPLICATE') {
-        setDuplicate(data.existing);
-      } else if (data?.code === 'RATE_LIMITED') {
-        setError(data.message);
-      } else if (data?.code === 'INVALID_IMAGE') {
-        setError(data.message);
-      } else {
-        setError(data?.message || 'Failed to submit. Please try again.');
-      }
+      const status = err?.response?.status;
+      if (data?.code === 'RATE_LIMITED') setError(data.message);
+      else if (data?.code === 'INVALID_IMAGE') setError(data.message);
+      else if (data?.code === 'MISSING_IMAGE') setError('A photo is required.');
+      else if (data?.code === 'MISSING_LOCATION') setError('Location is required.');
+      else if (status === 422) setError(data?.message || 'Invalid image. Please upload a clear photo.');
+      else if (status === 409) setDuplicate(data?.existing);
+      else if (!err?.response) setError('Cannot reach server. Make sure the backend is running.');
+      else setError(data?.message || `Server error (${status}). Please try again.`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!location) return setError('Please capture your location first.');
+    if (!form.description.trim()) return setError('Description is required.');
+    if (!file) return setError('A photo is required. Please upload an image of the issue.');
+    await doSubmit(buildFormData());
   };
 
   if (success) {
@@ -103,9 +186,11 @@ export default function SubmitComplaint() {
       <form onSubmit={handleSubmit} className="bg-white rounded-3xl card-3d p-6 sm:p-7 space-y-5">
 
         {/* Image Upload */}
-        <Field label="Photo">
+        <Field label="Photo" required>
           <div onClick={() => fileRef.current.click()}
-            className="border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 overflow-hidden">
+            className={`border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden ${
+              file ? 'border-emerald-400' : 'border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/30'
+            }`}>
             {preview ? (
               <img src={preview} alt="preview" className="w-full h-52 object-cover" />
             ) : (
@@ -173,21 +258,28 @@ export default function SubmitComplaint() {
           )}
         </Field>
 
-        {/* City (locked) + Ward */}
+        {/* City (locked) + Ward (auto-detected) */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="City">
             <input type="text" value={form.city} readOnly
               className={`${inputCls} bg-slate-50 text-slate-500 cursor-not-allowed`} />
           </Field>
           <Field label="Ward Number">
-            <select value={form.wardNumber}
+            <select
+              value={form.wardNumber}
               onChange={e => setForm(p => ({ ...p, wardNumber: e.target.value }))}
-              className={inputCls}>
+              className={`${inputCls} ${form.wardNumber ? 'border-teal-200 bg-teal-50 text-teal-700' : ''}`}>
               <option value="">Select ward</option>
               {Array.from({ length: 32 }, (_, i) => i + 1).map(n => (
                 <option key={n} value={n}>Ward {n}</option>
               ))}
             </select>
+            {form.wardNumber && location && (
+              <p className="text-xs text-teal-600 font-semibold mt-1.5 flex items-center gap-1">
+                <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                Auto-detected · you can change if incorrect
+              </p>
+            )}
           </Field>
         </div>
 
@@ -222,7 +314,7 @@ export default function SubmitComplaint() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-bold text-amber-800">This issue is already reported nearby</p>
+                <p className="text-sm font-bold text-amber-800">This issue is already reported nearby · reported {duplicate.count} time{duplicate.count !== 1 ? 's' : ''}</p>
                 <p className="text-xs text-amber-700 mt-0.5 line-clamp-2">{duplicate.description}</p>
               </div>
             </div>

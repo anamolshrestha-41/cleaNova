@@ -1,4 +1,4 @@
-// Returns distance in meters between two lat/lng points
+// Returns distance in metres between two lat/lng points
 const haversine = (lat1, lng1, lat2, lng2) => {
   const R = 6371000;
   const toRad = (d) => (d * Math.PI) / 180;
